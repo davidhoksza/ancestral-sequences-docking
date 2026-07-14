@@ -1,0 +1,205 @@
+##############################################################################################################
+#
+# Rosetta crash log. Please submit the contents of this file to http://crash.rosettacommons.org/
+# or use the script Rosetta/main/source/scripts/python/public/report_crashes.py
+#
+
+[START_CRASH_REPORT]
+[ROSETTA_VERSION]: 2026.06+HEAD.1a56185c25
+[COMMIT_DATE]: 2026-01-30T13:14:27
+[APPLICATION]: relax
+[MODE]: Release
+[EXTRAS]: cxx11thread serialization 
+[OS]: GNU/Linux
+[COMPILER]: Clang version "6.0.0 (tags/RELEASE_600/final)"
+[STDLIB]: libstdc++ version 20191114
+[START_OPTIONS]
+ -in:file:s=protein3.pdb -out:nstruct=5 -out:suffix=_relaxed -out:path:pdb=relaxed/ -relax:fast -relax:constrain_relax_to_start_coords -relax:coord_constrain_sidechains
+
+[END_OPTIONS]
+
+[START_BACKTRACE]: RAW_LIBC
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(backtrace_string[abi:cxx11](int)+0x3f) [0x7f375141002f]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::excn::Exception::Exception(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x138) [0x7f37514391c8]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::UtilityExitException::UtilityExitException(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0xbc) [0x7f3751413a3c]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::exit(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)+0x31) [0x7f3751413911]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, core::chemical::ResidueTypeSet const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, core::import_pose::ImportPoseOptions const&, bool, core::import_pose::FileType)+0x14e8) [0x7f37575f1bf8]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, core::import_pose::ImportPoseOptions const&, bool, core::import_pose::FileType)+0xd1) [0x7f37575efac1]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool, core::import_pose::FileType)+0x3a) [0x7f37575ee7ba]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::PDBJobInputter::pose_from_job(core::pose::Pose&, std::shared_ptr<protocols::jd2::Job>)+0x73a) [0x7f37580b2d0a]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::run_one_job(std::shared_ptr<protocols::moves::Mover>&, long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, unsigned long&, unsigned long&, bool)+0xaf8) [0x7f37580848d8]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::go_main(std::shared_ptr<protocols::moves::Mover>)+0xcd) [0x7f3758082b0d]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::FileSystemJobDistributor::go(std::shared_ptr<protocols::moves::Mover>)+0x4f) [0x7f375807ce1f]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.4.so(protocols::relax::Relax_main(bool)+0x14ef) [0x7f375b0329df]
+relax() [0x401260]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca) [0x7f374e19a1ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x7f374e19a28b]
+relax() [0x40114a]
+
+[END_BACKTRACE]
+
+[FILE]: src/core/import_pose/import_pose.cc
+[LINE]: 387
+[START_MESSAGE]
+[ ERROR ] UtilityExitException
+ERROR: Cannot open file "protein3.pdb"
+
+
+
+[END_MESSAGE]
+[END_CRASH_REPORT]
+
+##############################################################################################################
+#
+# Rosetta crash log. Please submit the contents of this file to http://crash.rosettacommons.org/
+# or use the script Rosetta/main/source/scripts/python/public/report_crashes.py
+#
+
+[START_CRASH_REPORT]
+[ROSETTA_VERSION]: 2026.06+HEAD.1a56185c25
+[COMMIT_DATE]: 2026-01-30T13:14:27
+[APPLICATION]: relax
+[MODE]: Release
+[EXTRAS]: cxx11thread serialization 
+[OS]: GNU/Linux
+[COMPILER]: Clang version "6.0.0 (tags/RELEASE_600/final)"
+[STDLIB]: libstdc++ version 20191114
+[START_OPTIONS]
+ -in:file:s=prot3.pdb -out:nstruct=5 -out:suffix=_relaxed -out:path:pdb=relaxed/ -relax:fast -relax:constrain_relax_to_start_coords -relax:coord_constrain_sidechains
+
+[END_OPTIONS]
+
+[START_BACKTRACE]: RAW_LIBC
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(backtrace_string[abi:cxx11](int)+0x3f) [0x7f6197e1002f]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::excn::Exception::Exception(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x138) [0x7f6197e391c8]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::UtilityExitException::UtilityExitException(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0xbc) [0x7f6197e13a3c]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::exit(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)+0x31) [0x7f6197e13911]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::wwPDBJobOutputter::final_pose(std::shared_ptr<protocols::jd2::Job>, core::pose::Pose const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x6fb) [0x7f619eae5bfb]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::job_succeeded(core::pose::Pose&, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x55) [0x7f619ea88fe5]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::FileSystemJobDistributor::job_succeeded(core::pose::Pose&, double, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x9) [0x7f619ea7cf29]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::write_output_from_job(core::pose::Pose&, std::shared_ptr<protocols::moves::Mover>, protocols::moves::MoverStatus, unsigned long, unsigned long&)+0xc27) [0x7f619ea8bb17]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::run_one_job(std::shared_ptr<protocols::moves::Mover>&, long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, unsigned long&, unsigned long&, bool)+0x1fec) [0x7f619ea85dcc]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::go_main(std::shared_ptr<protocols::moves::Mover>)+0xcd) [0x7f619ea82b0d]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::FileSystemJobDistributor::go(std::shared_ptr<protocols::moves::Mover>)+0x4f) [0x7f619ea7ce1f]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.4.so(protocols::relax::Relax_main(bool)+0x14ef) [0x7f61a1a329df]
+relax() [0x401260]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca) [0x7f6194b9a1ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x7f6194b9a28b]
+relax() [0x40114a]
+
+[END_BACKTRACE]
+
+[FILE]: src/protocols/jd2/wwPDBJobOutputter.cc
+[LINE]: 79
+[START_MESSAGE]
+[ ERROR ] UtilityExitException
+ERROR: Unable to open file: relaxed/prot3_relaxed_0001.pdb
+
+
+
+
+[END_MESSAGE]
+[END_CRASH_REPORT]
+
+##############################################################################################################
+#
+# Rosetta crash log. Please submit the contents of this file to http://crash.rosettacommons.org/
+# or use the script Rosetta/main/source/scripts/python/public/report_crashes.py
+#
+
+[START_CRASH_REPORT]
+[ROSETTA_VERSION]: 2026.06+HEAD.1a56185c25
+[COMMIT_DATE]: 2026-01-30T13:14:27
+[APPLICATION]: relax
+[MODE]: Release
+[EXTRAS]: cxx11thread serialization 
+[OS]: GNU/Linux
+[COMPILER]: Clang version "6.0.0 (tags/RELEASE_600/final)"
+[STDLIB]: libstdc++ version 20191114
+[START_OPTIONS]
+ -in:file:s="/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/input/prot1.pdb" -out:nstruct=5 -out:suffix=_relaxed -out:file:scorefile=/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/intermediate/relaxed/prot1_score.sc -out:path:pdb=/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/intermediate/relaxed/ -relax:fast -relax:constrain_relax_to_start_coords -relax:coord_constrain_sidechains
+
+[END_OPTIONS]
+
+[START_BACKTRACE]: RAW_LIBC
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(backtrace_string[abi:cxx11](int)+0x3f) [0x7f9f91c1002f]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::excn::Exception::Exception(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x138) [0x7f9f91c391c8]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::UtilityExitException::UtilityExitException(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0xbc) [0x7f9f91c13a3c]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::exit(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)+0x31) [0x7f9f91c13911]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, core::chemical::ResidueTypeSet const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, core::import_pose::ImportPoseOptions const&, bool, core::import_pose::FileType)+0x14e8) [0x7f9f97df1bf8]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, core::import_pose::ImportPoseOptions const&, bool, core::import_pose::FileType)+0xd1) [0x7f9f97defac1]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool, core::import_pose::FileType)+0x3a) [0x7f9f97dee7ba]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::PDBJobInputter::pose_from_job(core::pose::Pose&, std::shared_ptr<protocols::jd2::Job>)+0x73a) [0x7f9f988b2d0a]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::run_one_job(std::shared_ptr<protocols::moves::Mover>&, long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, unsigned long&, unsigned long&, bool)+0xaf8) [0x7f9f988848d8]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::go_main(std::shared_ptr<protocols::moves::Mover>)+0xcd) [0x7f9f98882b0d]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::FileSystemJobDistributor::go(std::shared_ptr<protocols::moves::Mover>)+0x4f) [0x7f9f9887ce1f]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.4.so(protocols::relax::Relax_main(bool)+0x14ef) [0x7f9f9b8329df]
+relax() [0x401260]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca) [0x7f9f8ec181ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x7f9f8ec1828b]
+relax() [0x40114a]
+
+[END_BACKTRACE]
+
+[FILE]: src/core/import_pose/import_pose.cc
+[LINE]: 387
+[START_MESSAGE]
+[ ERROR ] UtilityExitException
+ERROR: Cannot open file "/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/input/prot1.pdb"
+
+
+
+[END_MESSAGE]
+[END_CRASH_REPORT]
+
+##############################################################################################################
+#
+# Rosetta crash log. Please submit the contents of this file to http://crash.rosettacommons.org/
+# or use the script Rosetta/main/source/scripts/python/public/report_crashes.py
+#
+
+[START_CRASH_REPORT]
+[ROSETTA_VERSION]: 2026.06+HEAD.1a56185c25
+[COMMIT_DATE]: 2026-01-30T13:14:27
+[APPLICATION]: relax
+[MODE]: Release
+[EXTRAS]: cxx11thread serialization 
+[OS]: GNU/Linux
+[COMPILER]: Clang version "6.0.0 (tags/RELEASE_600/final)"
+[STDLIB]: libstdc++ version 20191114
+[START_OPTIONS]
+ -in:file:s="/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/input/prot1.pdb" -out:nstruct=5 -out:suffix=_relaxed -out:file:scorefile=/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/intermediate/relaxed/prot1_score.sc -out:path:pdb=/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/intermediate/relaxed/ -relax:fast -relax:constrain_relax_to_start_coords -relax:coord_constrain_sidechains
+
+[END_OPTIONS]
+
+[START_BACKTRACE]: RAW_LIBC
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(backtrace_string[abi:cxx11](int)+0x3f) [0x7f415b21002f]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::excn::Exception::Exception(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x138) [0x7f415b2391c8]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::UtilityExitException::UtilityExitException(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0xbc) [0x7f415b213a3c]
+/home/hellb/miniconda3/envs/rosetta/bin/libutility.so(utility::exit(char const*, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)+0x31) [0x7f415b213911]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, core::chemical::ResidueTypeSet const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, core::import_pose::ImportPoseOptions const&, bool, core::import_pose::FileType)+0x14e8) [0x7f41613f1bf8]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, core::import_pose::ImportPoseOptions const&, bool, core::import_pose::FileType)+0xd1) [0x7f41613efac1]
+/home/hellb/miniconda3/envs/rosetta/bin/libcore.6.so(core::import_pose::pose_from_file(core::pose::Pose&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool, core::import_pose::FileType)+0x3a) [0x7f41613ee7ba]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::PDBJobInputter::pose_from_job(core::pose::Pose&, std::shared_ptr<protocols::jd2::Job>)+0x73a) [0x7f4161eb2d0a]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::run_one_job(std::shared_ptr<protocols::moves::Mover>&, long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, unsigned long&, unsigned long&, bool)+0xaf8) [0x7f4161e848d8]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::JobDistributor::go_main(std::shared_ptr<protocols::moves::Mover>)+0xcd) [0x7f4161e82b0d]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.1.so(protocols::jd2::FileSystemJobDistributor::go(std::shared_ptr<protocols::moves::Mover>)+0x4f) [0x7f4161e7ce1f]
+/home/hellb/miniconda3/envs/rosetta/bin/libprotocols.4.so(protocols::relax::Relax_main(bool)+0x14ef) [0x7f4164e329df]
+relax() [0x401260]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca) [0x7f41582181ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x7f415821828b]
+relax() [0x40114a]
+
+[END_BACKTRACE]
+
+[FILE]: src/core/import_pose/import_pose.cc
+[LINE]: 387
+[START_MESSAGE]
+[ ERROR ] UtilityExitException
+ERROR: Cannot open file "/mnt/c/Users/david/OneDrive - Univerzita Karlova/projects/ancestral-sequences-docking/data/input/prot1.pdb"
+
+
+
+[END_MESSAGE]
+[END_CRASH_REPORT]
+

@@ -11,6 +11,15 @@ data/intermediate/relaxed/:
     motif residues from 01_identify_motif.py's output)
   - writes a Vina config to data/intermediate/vina_configs/
 
+With --flexible, additionally prepares flexible-sidechain docking for every
+structure except the 6c2u reference (and its 6c2u_model_* variants): the
+P-loop residues that are neither the first/last residue of their motif range
+nor Glycine (see pdb_utils.flexible_ploop_residues) are split into a
+separate flexible-sidechain PDBQT via Meeko's -f/--flexres, and a second,
+additively-named Vina config (<name>_flex_config.txt, output to
+<name>_flex_vina_output.pdbqt) is written alongside the normal rigid-only
+one -- the rigid-only config/output for the same structure is unaffected.
+
 Requires Meeko (`pip install meeko`), which provides mk_prepare_receptor.py /
 mk_prepare_ligand.py on PATH; override with --prepare-receptor-cmd /
 --prepare-ligand-cmd if they need to be invoked differently (e.g. via
@@ -23,6 +32,7 @@ import shlex
 import subprocess
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -30,10 +40,10 @@ from paths import (
     INPUT_DIR, RELAXED_DIR, PDBQT_DIR, VINA_CONFIGS_DIR, VINA_POSES_DIR,
     MOTIF_RESIDUES_FILE, LIGAND_SDF, LIGAND_PDBQT, LOGS_DIR, REPO_ROOT, rel,
 )
-from pdb_utils import ca_coords, bounding_box, load_motif_residues
+from pdb_utils import ca_coords, bounding_box, load_motif_residues, flexible_ploop_residues
 
 PADDING = 10.0
-EXHAUSTIVENESS = 16
+EXHAUSTIVENESS = 4
 NUM_MODES = 9
 ENERGY_RANGE = 4
 RECEPTOR_ERROR_LOG = LOGS_DIR / "prepare_docking_errors.log"
@@ -53,6 +63,23 @@ def log_error(log_path, pdb_path, cmd, result):
         f.write("\n\n")
 
 
+def run_receptor_prep(cmd, pdb_path, error_log):
+    """Run a Meeko receptor-prep command; log + return False on any failure.
+
+    Covers both a nonzero exit and the command not being found/runnable at
+    all (e.g. Meeko isn't installed) -- subprocess.run raises OSError for the
+    latter rather than returning a result, so it needs its own catch.
+    """
+    try:
+        result = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    except OSError as e:
+        result = SimpleNamespace(returncode=-1, stdout="", stderr=str(e))
+    if result.returncode != 0:
+        log_error(error_log, pdb_path, cmd, result)
+        return False
+    return True
+
+
 def ensure_receptor_pdbqt(pdb_path, pdbqt_dir, prepare_receptor_cmd, error_log=RECEPTOR_ERROR_LOG):
     out_path = pdbqt_dir / f"{pdb_path.stem}.pdbqt"
     if out_path.exists():
@@ -64,15 +91,41 @@ def ensure_receptor_pdbqt(pdb_path, pdbqt_dir, prepare_receptor_cmd, error_log=R
     # exact path we want written rather than relying on -o/--output_basename.
     cmd = shlex.split(prepare_receptor_cmd) + ["-i", rel(pdb_path), "-p", rel(out_path)]
     print(f"  Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
-    if result.returncode != 0:
-        log_error(error_log, pdb_path, cmd, result)
-        print(
-            f"  ERROR: receptor prep failed for {pdb_path.name} "
-            f"(exit {result.returncode}) -- logged to {error_log}, skipping"
-        )
+    if not run_receptor_prep(cmd, pdb_path, error_log):
+        print(f"  ERROR: receptor prep failed for {pdb_path.name} -- "
+              f"logged to {error_log}, skipping")
         return None
     return out_path
+
+
+def flexres_arg(flexible_residues):
+    """Meeko -f/--flexres value, e.g. "A:11,A:12,A:15" from (chain, res_num) pairs."""
+    return ",".join(f"{chain}:{res_num}" for chain, res_num in flexible_residues)
+
+
+def ensure_flexible_receptor_pdbqt(pdb_path, pdbqt_dir, flexres, prepare_receptor_cmd, error_log=RECEPTOR_ERROR_LOG):
+    """Split a receptor into rigid + flexible-sidechain PDBQTs via Meeko's -f.
+
+    Returns (rigid_path, flex_path), or (None, None) on failure.
+    """
+    rigid_path = pdbqt_dir / f"{pdb_path.stem}_rigid.pdbqt"
+    flex_path = pdbqt_dir / f"{pdb_path.stem}_flex.pdbqt"
+    if rigid_path.exists() and flex_path.exists():
+        return rigid_path, flex_path
+    pdbqt_dir.mkdir(parents=True, exist_ok=True)
+    print(f"  Converting {pdb_path.name} -> {rigid_path.name} + {flex_path.name} (flexible: {flexres})")
+    # Without an explicit filename, -p falls back to "<output_basename>_rigid.pdbqt"
+    # / "_flex.pdbqt" -- exactly the split we want here, unlike the plain
+    # rigid-only case above where we pin an exact filename to avoid that suffix.
+    cmd = shlex.split(prepare_receptor_cmd) + [
+        "-i", rel(pdb_path), "-o", rel(pdbqt_dir / pdb_path.stem), "-f", flexres, "-p",
+    ]
+    print(f"  Running: {' '.join(cmd)}")
+    if not run_receptor_prep(cmd, pdb_path, error_log):
+        print(f"  ERROR: flexible receptor prep failed for {pdb_path.name} -- "
+              f"logged to {error_log}, skipping")
+        return None, None
+    return rigid_path, flex_path
 
 
 def ensure_ligand_pdbqt(sdf_path, out_path, prepare_ligand_cmd):
@@ -99,23 +152,32 @@ def compute_box(pdb_path, motif_residues, padding):
     return bounding_box(np.vstack(coords), padding=padding)
 
 
-def write_config(config_path, receptor, ligand, center, size, out_pose, exhaustiveness):
+def write_config(config_path, receptor, ligand, center, size, out_pose, exhaustiveness, flex=None):
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        f"# AutoDock Vina configuration for ATP docking into {receptor.stem}\n"
-        f"receptor = {rel(receptor)}\n"
-        f"ligand = {rel(ligand)}\n\n"
-        f"center_x = {center[0]:.3f}\n"
-        f"center_y = {center[1]:.3f}\n"
-        f"center_z = {center[2]:.3f}\n\n"
-        f"size_x = {size[0]:.3f}\n"
-        f"size_y = {size[1]:.3f}\n"
-        f"size_z = {size[2]:.3f}\n\n"
-        f"out = {rel(out_pose)}\n\n"
-        f"exhaustiveness = {exhaustiveness}\n"
-        f"num_modes = {NUM_MODES}\n"
-        f"energy_range = {ENERGY_RANGE}\n"
-    )
+    lines = [
+        f"# AutoDock Vina configuration for ATP docking into {receptor.stem}",
+        f"receptor = {rel(receptor)}",
+    ]
+    if flex is not None:
+        lines.append(f"flex = {rel(flex)}")
+    lines += [
+        f"ligand = {rel(ligand)}",
+        "",
+        f"center_x = {center[0]:.3f}",
+        f"center_y = {center[1]:.3f}",
+        f"center_z = {center[2]:.3f}",
+        "",
+        f"size_x = {size[0]:.3f}",
+        f"size_y = {size[1]:.3f}",
+        f"size_z = {size[2]:.3f}",
+        "",
+        f"out = {rel(out_pose)}",
+        "",
+        f"exhaustiveness = {exhaustiveness}",
+        f"num_modes = {NUM_MODES}",
+        f"energy_range = {ENERGY_RANGE}",
+    ]
+    config_path.write_text("\n".join(lines) + "\n")
 
 
 def main():
@@ -132,7 +194,24 @@ def main():
         help="Where failed receptor-prep runs get logged instead of aborting "
              "the whole script (default: %(default)s)",
     )
+    parser.add_argument(
+        "--flexible", action="store_true",
+        help="Also prepare flexible-sidechain docking (see module docstring) for every "
+             "structure except the 6c2u reference, writing additive <name>_flex_config.txt "
+             "configs alongside the normal rigid-only ones.",
+    )
+    parser.add_argument(
+        "--flexible-exhaustiveness", type=int, default=None,
+        help="Exhaustiveness for the flexible-docking configs specifically; defaults to "
+             "--exhaustiveness if not given. Flexible docking searches a larger "
+             "conformational space (rotatable side chains, not just the ligand), so a "
+             "higher value than the rigid-only run may be worth it.",
+    )
     args = parser.parse_args()
+    flexible_exhaustiveness = (
+        args.exhaustiveness if args.flexible_exhaustiveness is None
+        else args.flexible_exhaustiveness
+    )
 
     if not args.motif_residues.exists():
         raise SystemExit(
@@ -150,10 +229,6 @@ def main():
     print(f"Found {len(structures)} structures to prepare\n")
 
     for pdb_path in structures:
-        
-        # if '6c2u' in str(pdb_path.name):
-        #     continue
-
         print(f"Processing {pdb_path.name}")
         receptor_pdbqt = ensure_receptor_pdbqt(
             pdb_path, PDBQT_DIR, args.prepare_receptor_cmd, args.error_log
@@ -173,12 +248,35 @@ def main():
 
         base_name = pdb_path.stem
         config_path = VINA_CONFIGS_DIR / f"{base_name}_config.txt"
-        out_pose = VINA_POSES_DIR / f"{base_name}_vina_output.pdbqt"        
+        out_pose = VINA_POSES_DIR / f"{base_name}_vina_output.pdbqt"
         write_config(
             config_path, receptor_pdbqt, ligand_pdbqt, center, size, out_pose,
             args.exhaustiveness,
         )
         print(f"  Config written to {config_path}\n")
+
+        if args.flexible and not base_name.startswith("6c2u"):
+            flexible_residues = flexible_ploop_residues(pdb_path, motif_residues)
+            if not flexible_residues:
+                print(f"  WARNING: no eligible flexible residues for {pdb_path.name}, "
+                      f"skipping flexible prep\n")
+                continue
+            flexres = flexres_arg(flexible_residues)
+            rigid_pdbqt, flex_pdbqt = ensure_flexible_receptor_pdbqt(
+                pdb_path, PDBQT_DIR, flexres, args.prepare_receptor_cmd, args.error_log
+            )
+            if rigid_pdbqt is None:
+                print(f"  Skipping flexible config -- flexible receptor prep failed "
+                      f"for {pdb_path.name}\n")
+                continue
+            flex_config_path = VINA_CONFIGS_DIR / f"{base_name}_flex_config.txt"
+            flex_out_pose = VINA_POSES_DIR / f"{base_name}_flex_vina_output.pdbqt"
+            write_config(
+                flex_config_path, rigid_pdbqt, ligand_pdbqt, center, size, flex_out_pose,
+                flexible_exhaustiveness, flex=flex_pdbqt,
+            )
+            print(f"  Flexible residues: {flexres}")
+            print(f"  Flexible config written to {flex_config_path}\n")
 
     print("Done.")
 

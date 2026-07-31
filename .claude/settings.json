@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(python -c \"import numpy\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python scripts/03_prepare_docking.py --flexible)",
+      "WebSearch",
+      "WebFetch(domain:docs.metacentrum.cz)"
     ]
   }
 }

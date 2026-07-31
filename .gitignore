@@ -5,3 +5,7 @@ __pycache__/
 
 # Dangling symlink to a Rosetta binary on a different machine
 data/relax
+
+# PBS job-scheduler stdout/stderr on Metacentrum -- operational noise, not
+# scientific output (unlike data/**/*.log, which is tracked)
+metacentrum/logs/

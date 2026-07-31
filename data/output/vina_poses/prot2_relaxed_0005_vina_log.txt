@@ -1,4 +1,4 @@
-AutoDock Vina v1.2.5
+AutoDock Vina f458505-mod
 #################################################################
 # If you used AutoDock Vina in your work, please cite:          #
 #                                                               #
@@ -23,13 +23,12 @@ Ligand: data/intermediate/pdbqt/atp.pdbqt
 Grid center: X -3.193 Y 1.028 Z -12.521
 Grid size  : X 24.365 Y 25.641 Z 25.584
 Grid space : 0.375
-Exhaustiveness: 16
-CPU: 0
+Exhaustiveness: 512
+CPU: 4
 Verbosity: 1
 
 Computing Vina grid ... done.
-WARNING: At low exhaustiveness, it may be impossible to utilize all CPUs.
-Performing docking (random seed: -142223948) ... 
+Performing docking (random seed: 1429164415) ... 
 0%   10   20   30   40   50   60   70   80   90   100%
 |----|----|----|----|----|----|----|----|----|----|
 ***************************************************
@@ -37,12 +36,12 @@ Performing docking (random seed: -142223948) ...
 mode |   affinity | dist from best mode
      | (kcal/mol) | rmsd l.b.| rmsd u.b.
 -----+------------+----------+----------
-   1       -6.479          0          0
-   2       -6.468      1.649      2.673
-   3       -6.453      2.107      3.306
-   4       -6.155      1.785      2.662
-   5       -5.987      1.784      3.213
-   6       -5.962      1.231      2.128
-   7       -5.946      3.696      5.522
-   8       -5.834        2.1      3.305
-   9       -5.731      5.578      8.435
+   1       -6.175          0          0
+   2       -6.003      2.036      3.291
+   3       -5.998      2.689       4.03
+   4       -5.946      1.271      2.256
+   5       -5.945      2.152      3.145
+   6       -5.933      1.423       2.53
+   7       -5.866      1.583      3.126
+   8       -5.861      1.122      1.661
+   9       -5.851       1.98      3.613

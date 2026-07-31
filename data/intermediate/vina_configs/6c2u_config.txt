@@ -1,0 +1,17 @@
+# AutoDock Vina configuration for ATP docking into 6c2u
+receptor = data/intermediate/pdbqt/6c2u.pdbqt
+ligand = data/intermediate/pdbqt/atp.pdbqt
+
+center_x = 29.326
+center_y = 5.000
+center_z = -3.241
+
+size_x = 23.785
+size_y = 33.095
+size_z = 28.269
+
+out = data/output/vina_poses/6c2u_vina_output.pdbqt
+
+exhaustiveness = 4
+num_modes = 9
+energy_range = 4

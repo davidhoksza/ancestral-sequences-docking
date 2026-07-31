@@ -44,7 +44,8 @@ shell script, and Rosetta/Vina inputs/outputs under `data/`.
 Top level: `scripts/` (pipeline scripts, see below — including `docking_box.py`, the PyMOL
 box-visualization plugin used by step 5), `vina_1.2.7_win.exe`, `scratch/` (ad-hoc/
 exploratory, not part of the reproducible pipeline — currently just `prepare_docking.ipynb`,
-the superseded notebook this pipeline replaced).
+the superseded notebook this pipeline replaced), `metacentrum/` (HPC deployment, see
+"Running on Metacentrum" below — not used for local runs).
 
 ## Pipeline / commands
 
@@ -84,12 +85,34 @@ steps read the files the earlier ones wrote rather than taking piped input.
    (`exhaustiveness=16` by default, override with `--exhaustiveness`). Requires step 1's
    output to exist first.
 
-4. **`scripts/04_run_docking.sh`** — runs Vina (`vina` on PATH by default — edit `VINA_BIN`
-   in the script to point at `./vina_1.2.7_win.exe` or elsewhere) against every config in
-   `data/intermediate/vina_configs/`, writing poses to `data/output/vina_poses/` per each
-   config's `out =` line, and tee's Vina's stdout to a matching
-   `<structure>_vina_log.txt` in the same directory. Requires step 3's configs to exist
-   first.
+   `--flexible` additionally prepares flexible-sidechain docking for every structure except
+   the 6c2u reference (and its `6c2u_model_*` variants). Flexible residues
+   (`pdb_utils.flexible_ploop_residues`) are the P-loop residues that are neither the
+   first/last residue of their motif range nor Glycine — checked against each structure's
+   *own* PDB, not assumed from the reference, since ancestral variants aren't guaranteed to
+   match the reference at every position. Those residues are split into
+   `data/intermediate/pdbqt/<structure>_rigid.pdbqt` + `<structure>_flex.pdbqt` via Meeko's
+   `-f/--flexres`, and a second, additively-named config
+   (`data/intermediate/vina_configs/<structure>_flex_config.txt`, with both `receptor =` and
+   `flex =` lines, output to `<structure>_flex_vina_output.pdbqt`) is written alongside the
+   normal rigid-only one. The script always wipes *all* `*.txt` configs at startup before
+   regenerating, so a flex config only persists if `--flexible` is passed on every
+   subsequent run too — running 03 without it will remove previously-generated flex configs.
+   Steps 4 and 6 need no changes to handle flex configs/logs — they're picked up by the same
+   `*.txt`/`*_vina_log.txt` globs. Step 5 does *not* yet resolve a receptor for
+   `<structure>_flex`-named pose files, so flexible docking results won't get an
+   auto-generated PyMOL script today.
+
+4. **`scripts/04_run_docking.sh [prefix]`** — runs Vina (`vina` on PATH by default — edit
+   `VINA_BIN` in the script to point at `./vina_1.2.7_win.exe` or elsewhere) against every
+   config in `data/intermediate/vina_configs/` whose filename starts with `prefix` (omit it
+   to run every config; e.g. `prot1` matches `prot1_config.txt`, `prot1_flex_config.txt`,
+   `prot1_relaxed_0001_config.txt`, ... — this is what `metacentrum/` uses to split work by
+   protein), writing poses to `data/output/vina_poses/` per each config's `out =` line, and
+   tee's Vina's stdout to a matching `<structure>_vina_log.txt` in the same directory. Set
+   `VINA_CPU` to cap Vina's CPU usage per config (passed as `--cpu`) — important on a shared
+   machine/HPC node, otherwise Vina auto-detects and tries to use every CPU on the node.
+   Requires step 3's configs to exist first.
 
 5. **`python scripts/05_generate_pymol_scripts.py`** — for every
    `data/output/vina_poses/<structure>_vina_output.pdbqt`, finds the matching original
@@ -137,3 +160,33 @@ There is no build, lint, or automated test tooling in this repo. Requires `numpy
 When adding a new candidate structure: drop `protN.pdb` into `data/input/`, then run steps
 2-6 above (step 1 only needs re-running if you change the reference structure or motif
 pattern).
+
+## Running on Metacentrum
+
+`metacentrum/` distributes step 4 (docking) across the Czech Metacentrum HPC grid
+(docs.metacentrum.cz) as one PBS job per protein, each running
+`scripts/04_run_docking.sh <protN>` (so a job covers all of that protein's configs — rigid,
+flexible, relaxed replicates) directly against project storage, with no scratch staging: all
+jobs read/write the same shared `data/` directory.
+
+One-time setup, after copying this repo to
+`/storage/praha5-elixir/home/davidhoksza/projects/ancestral-docking` (`$PROJECT_DIR` below;
+override via the `PROJECT_DIR` env var if it lives elsewhere):
+
+1. **`bash metacentrum/setup_env.sh`** (on a frontend node, e.g. `elmo.metacentrum.cz`) —
+   creates a mamba env at `$PROJECT_DIR/envs/docking` from `metacentrum/environment.yml`
+   (`vina`, `openbabel`, `meeko`, `numpy`, all via conda-forge/pip). Rosetta (for step 2) is
+   *not* installed here — it's a pre-existing Metacentrum module (`module avail rosetta/`),
+   gated behind joining the `lic_rosetta` group via the e-INFRA portal.
+
+2. **`bash metacentrum/submit_all.sh [protN ...]`** — submits one `qsub` job per protein
+   (default: `prot1`..`prot8`; pass specific names to submit a subset) via
+   `metacentrum/run_docking_job.pbs`, which requests `ncpus=4` + `walltime=24:00:00`,
+   activates the mamba env, `cd`s into `$PROJECT_DIR`, and runs
+   `VINA_CPU=4 scripts/04_run_docking.sh <protN>`. PBS stdout/stderr per job goes to
+   `metacentrum/logs/<protN>.log` (gitignored — operational noise, unlike the tracked
+   `data/**/*.log` scientific logs).
+
+Steps 1-3 (motif ID, relax, receptor/config prep) are expected to have already been run —
+either locally before copying the repo over, or manually on Metacentrum with the same mamba
+env active (plus the `rosetta` module loaded, for step 2).

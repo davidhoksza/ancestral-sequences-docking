@@ -10,6 +10,9 @@ color skyblue, receptor
 select ploop, receptor and resi 9-16+62-69
 show sticks, ploop
 color magenta, ploop and elem C
+label ploop and name CA, resn
+set label_color, white
+set label_size, 10
 
 show sticks, poses
 util.cbag poses

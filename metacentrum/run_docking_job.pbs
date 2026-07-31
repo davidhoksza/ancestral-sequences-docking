@@ -1,0 +1,25 @@
+#!/bin/bash
+#PBS -N docking_job
+#PBS -l select=1:ncpus=4:mem=8gb
+#PBS -l walltime=24:00:00
+#PBS -j oe
+#
+# Docks every Vina config matching one protein's prefix (e.g. "prot1" ->
+# prot1_config.txt, prot1_flex_config.txt, prot1_relaxed_0001_config.txt,
+# ...) -- one PBS job per protein. Reads/writes directly on project storage
+# (no scratch staging), so every job shares the same data/ directory.
+#
+# Not meant to be qsub'd directly -- use metacentrum/submit_all.sh, which
+# sets PREFIX (and the job name) per protein via `qsub -v` / `qsub -N`.
+set -euo pipefail
+
+: "${PREFIX:?PREFIX must be set, e.g.: qsub -v PREFIX=prot1 run_docking_job.pbs}"
+PROJECT_DIR="${PROJECT_DIR:-/storage/praha5-elixir/home/davidhoksza/projects/ancestral-docking}"
+
+module add mambaforge
+mamba activate "$PROJECT_DIR/envs/docking"
+
+cd "$PROJECT_DIR"
+echo "Host: $(hostname), CPUs allocated: $(nproc), prefix: $PREFIX"
+
+VINA_CPU="${VINA_CPU:-4}" bash scripts/04_run_docking.sh "$PREFIX"

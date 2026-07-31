@@ -42,6 +42,43 @@ def bounding_box(coords, padding=10.0):
     return center, size
 
 
+def residue_names(pdb_path, res_start, res_end):
+    """{res_num: (chain_id, three_letter_resname)} for residues in [res_start, res_end]."""
+    residues = {}
+    with open(pdb_path) as f:
+        for line in f:
+            if line.startswith('ATOM'):
+                res_num = int(line[22:26])
+                if res_start <= res_num <= res_end and res_num not in residues:
+                    residues[res_num] = (line[21].strip(), line[17:20].strip())
+    return residues
+
+
+def flexible_ploop_residues(pdb_path, motif_residues):
+    """(chain, res_num) pairs eligible for Vina flexible-sidechain docking.
+
+    For each motif range, excludes the first and last residue of the range,
+    and excludes any residue that is actually Glycine in *this* structure
+    (Gly has no side chain to flex) -- residue identity is read from
+    pdb_path itself rather than assumed from the reference/regex pattern,
+    since ancestral variants aren't guaranteed to match it at every position.
+    """
+    flexible = []
+    for start, end in motif_residues:
+        names = residue_names(pdb_path, start, end)
+        for res_num in range(start, end + 1):
+            if res_num in (start, end):
+                continue
+            entry = names.get(res_num)
+            if entry is None:
+                continue
+            chain_id, resname = entry
+            if resname == 'GLY':
+                continue
+            flexible.append((chain_id, res_num))
+    return flexible
+
+
 def load_motif_residues(path):
     """1-indexed (start, end) residue ranges written by 01_identify_motif.py."""
     with open(path) as f:

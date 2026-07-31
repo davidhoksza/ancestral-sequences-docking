@@ -6,7 +6,8 @@ matching original receptor (data/input/<base_name>.pdb, or
 data/intermediate/relaxed/<base_name>.pdb for relaxed models) and writes a
 .pml script to data/output/pymol_scripts/<base_name>_view.pml that:
   - loads the receptor as cartoon, with the P-loop motif residues (from
-    data/intermediate/motif_residues.json) shown as sticks and highlighted
+    data/intermediate/motif_residues.json) shown as sticks, highlighted, and
+    labeled (3-letter residue code at each CA)
   - loads the Vina output poses (each mode becomes a PyMOL state) as sticks
   - draws polar contacts (`distance ..., mode=2`) between the poses and the
     receptor, colored separately for contacts to P-loop residues vs. to the
@@ -34,6 +35,7 @@ RECEPTOR_COLOR = "skyblue"
 # Not orange -- that's PyMOL's default element color for phosphorus, which
 # would blend the P-loop sticks into ATP's phosphate tail.
 PLOOP_COLOR = "magenta"
+PLOOP_LABEL_COLOR = "white"
 PLOOP_HBOND_COLOR = "yellow"
 OTHER_HBOND_COLOR = "cyan"
 HBOND_DASH_TRANSPARENCY = 0.5
@@ -95,6 +97,9 @@ def write_pymol_script(
             f"select ploop, receptor and resi {motif_selection}",
             "show sticks, ploop",
             f"color {PLOOP_COLOR}, ploop and elem C",
+            "label ploop and name CA, resn",
+            f"set label_color, {PLOOP_LABEL_COLOR}",
+            "set label_size, 10",
             "",
         ]
     lines += [

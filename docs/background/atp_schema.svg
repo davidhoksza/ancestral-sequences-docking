@@ -1,0 +1,73 @@
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <rect width="900" height="380" fill="#ffffff"/>
+
+  <text x="450" y="28" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">ATP – Adenosin-5'-trifosfát</text>
+
+  <!-- Adenine ring -->
+  <g stroke="#333" stroke-width="1.6" fill="none">
+    <polygon points="55,140 90,120 125,140 125,180 90,200 55,180" fill="#dbeafe"/>
+    <polygon points="125,140 160,150 170,185 140,207 125,180" fill="#bfdbfe"/>
+  </g>
+  <text x="90" y="165" text-anchor="middle" font-size="13" fill="#1e3a8a">Adenin</text>
+
+  <!-- bond adenine to ribose -->
+  <line x1="170" y1="185" x2="210" y2="200" stroke="#333" stroke-width="1.6"/>
+
+  <!-- Ribose ring -->
+  <polygon points="210,200 250,190 275,215 255,250 215,245" fill="#fef3c7" stroke="#333" stroke-width="1.6"/>
+  <text x="240" y="222" text-anchor="middle" font-size="12" fill="#78350f">Ribóza</text>
+
+  <!-- 5' CH2 linker up to first phosphate -->
+  <line x1="250" y1="190" x2="285" y2="150" stroke="#333" stroke-width="1.6"/>
+
+  <!-- alpha phosphate -->
+  <circle cx="330" cy="120" r="34" fill="#fee2e2" stroke="#b91c1c" stroke-width="2"/>
+  <text x="330" y="116" text-anchor="middle" font-size="15" font-weight="bold" fill="#7f1d1d">P</text>
+  <text x="330" y="133" text-anchor="middle" font-size="10" fill="#7f1d1d">alfa</text>
+  <line x1="285" y1="150" x2="303" y2="132" stroke="#333" stroke-width="1.8"/>
+
+  <!-- bridging O alpha-beta -->
+  <line x1="364" y1="120" x2="400" y2="120" stroke="#333" stroke-width="1.8"/>
+  <text x="377" y="112" text-anchor="middle" font-size="11" fill="#555">O</text>
+
+  <!-- beta phosphate -->
+  <circle cx="445" cy="120" r="34" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+  <text x="445" y="116" text-anchor="middle" font-size="15" font-weight="bold" fill="#14532d">P</text>
+  <text x="445" y="133" text-anchor="middle" font-size="10" fill="#14532d">beta</text>
+
+  <!-- bridging O beta-gamma -->
+  <line x1="479" y1="120" x2="515" y2="120" stroke="#333" stroke-width="1.8"/>
+  <text x="492" y="112" text-anchor="middle" font-size="11" fill="#555">O</text>
+
+  <!-- gamma phosphate -->
+  <circle cx="560" cy="120" r="34" fill="#e0e7ff" stroke="#4338ca" stroke-width="2"/>
+  <text x="560" y="116" text-anchor="middle" font-size="15" font-weight="bold" fill="#312e81">P</text>
+  <text x="560" y="133" text-anchor="middle" font-size="10" fill="#312e81">gama</text>
+  <text x="583" y="100" font-size="12" fill="#555">O-</text>
+  <text x="583" y="150" font-size="12" fill="#555">O-</text>
+  <text x="550" y="80" font-size="12" fill="#555">O</text>
+
+  <!-- cleavage site marker -->
+  <line x1="479" y1="95" x2="479" y2="145" stroke="#dc2626" stroke-width="3" stroke-dasharray="3,4"/>
+  <text x="479" y="185" text-anchor="middle" font-size="11" fill="#dc2626">místo štěpení při hydrolýze</text>
+  <text x="479" y="200" text-anchor="middle" font-size="11" fill="#dc2626">ATP → ADP + Pi</text>
+
+  <!-- "tail" bracket -->
+  <path d="M 300 235 Q 445 260 590 235" stroke="#6b7280" stroke-width="1.6" fill="none" stroke-dasharray="4,3"/>
+  <text x="445" y="278" text-anchor="middle" font-size="13" fill="#374151" font-weight="bold">fosfátový "ocas" (alfa-beta-gama)</text>
+  <text x="445" y="295" text-anchor="middle" font-size="11" fill="#374151">— tato část je zanořená v P-loop smyčce —</text>
+
+  <!-- legend -->
+  <g font-size="12">
+    <rect x="60" y="320" width="14" height="14" fill="#fee2e2" stroke="#b91c1c"/>
+    <text x="80" y="331" fill="#333">alfa — nejblíže ribóze, zůstává v ADP</text>
+
+    <rect x="60" y="342" width="14" height="14" fill="#dcfce7" stroke="#15803d"/>
+    <text x="80" y="353" fill="#333">beta — prostřední, zůstává v ADP</text>
+
+    <rect x="450" y="320" width="14" height="14" fill="#e0e7ff" stroke="#4338ca"/>
+    <text x="470" y="331" fill="#333">gama — koncový, odštěpuje se při hydrolýze (uvolní se jako Pi)</text>
+
+    <text x="450" y="353" fill="#555">P-loop kontaktuje hlavně beta a gama fosfát (backbone NH + Lys)</text>
+  </g>
+</svg>

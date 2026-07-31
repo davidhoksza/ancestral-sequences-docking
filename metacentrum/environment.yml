@@ -1,0 +1,20 @@
+# Mamba/conda environment for running the docking pipeline (steps 3-4) on
+# Metacentrum. Rosetta (step 2) is NOT included here -- it's provided as a
+# Metacentrum module instead (module avail rosetta/), gated behind joining
+# the lic_rosetta group; see metacentrum/setup_env.sh.
+#
+# Created with: mamba env create --prefix <path> -f environment.yml
+name: docking
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - vina
+  - openbabel
+  - rdkit
+  - scipy
+  - gemmi
+  - pip
+  - pip:
+      - meeko

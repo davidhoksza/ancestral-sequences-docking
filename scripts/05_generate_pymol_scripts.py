@@ -15,6 +15,11 @@ data/intermediate/relaxed/<base_name>.pdb for relaxed models) and writes a
   - if a matching data/intermediate/vina_configs/<base_name>_config.txt
     exists, overlays the docking search box via scratch/docking_box.py
 
+For flexible-docking poses (<base_name>_flex_vina_output.pdbqt), the
+receptor is resolved from <base_name> with the trailing "_flex" stripped --
+that suffix only marks the pose/config as flexible-sidechain output; the
+receptor PDB itself is the original, undocked structure.
+
 Paths inside the generated scripts are relative to the repo root (same
 convention as the Vina configs), so run PyMOL from the repo root, e.g.
 `pymol data/output/pymol_scripts/<base_name>_view.pml`.
@@ -173,11 +178,16 @@ def main():
 
     for poses_path in pose_files:
         base_name = re.sub(r"_vina_output$", "", poses_path.stem)
+        # Flexible-docking poses come from a receptor split into
+        # <structure>_rigid.pdbqt + <structure>_flex.pdbqt (see
+        # 03_prepare_docking.py); the original receptor PDB is under
+        # <structure>, without the "_flex" suffix.
+        receptor_name = re.sub(r"_flex$", "", base_name)
         print(f"Processing {base_name}")
 
-        receptor_path = find_receptor(base_name)
+        receptor_path = find_receptor(receptor_name)
         if receptor_path is None:
-            print(f"  WARNING: no receptor PDB found for {base_name}, skipping\n")
+            print(f"  WARNING: no receptor PDB found for {receptor_name}, skipping\n")
             continue
 
         box_params = None if args.no_box else load_box_params(base_name, args.vina_configs_dir)

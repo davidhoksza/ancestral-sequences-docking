@@ -99,9 +99,10 @@ steps read the files the earlier ones wrote rather than taking piped input.
    regenerating, so a flex config only persists if `--flexible` is passed on every
    subsequent run too — running 03 without it will remove previously-generated flex configs.
    Steps 4 and 6 need no changes to handle flex configs/logs — they're picked up by the same
-   `*.txt`/`*_vina_log.txt` globs. Step 5 does *not* yet resolve a receptor for
-   `<structure>_flex`-named pose files, so flexible docking results won't get an
-   auto-generated PyMOL script today.
+   `*.txt`/`*_vina_log.txt` globs. Step 5 resolves the receptor for
+   `<structure>_flex`-named pose files by stripping the trailing `_flex` back to
+   `<structure>` — that suffix only marks the pose/config as flexible-sidechain output, the
+   receptor PDB is still the original, undocked structure.
 
 4. **`scripts/04_run_docking.sh [prefix]`** — runs Vina (`vina` on PATH by default — edit
    `VINA_BIN` in the script to point at `./vina_1.2.7_win.exe` or elsewhere) against every

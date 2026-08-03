@@ -24,6 +24,15 @@ Rosetta `relax` and scored. Predicted binding affinity is then used as a rough p
 "did this ancestor plausibly still bind ATP?" — see the caveats on trusting Vina's score as
 an absolute ΔG in [`docs/background/P-loop_ATP_binding_summary.md`](docs/background/P-loop_ATP_binding_summary.md#atpp-loop-binding-energy).
 
+This project is essentially an application of
+[hugohrban/protein-translator](https://github.com/hugohrban/protein-translator), which
+generates the ancestrally-reconstructed sequences docked here; `6c2u`, specifically, is the
+use case that project presented as a poster at ISMB/ECCB 2025 (see the poster PDF and a
+visualization of the translation process at
+[ms.mff.cuni.cz/~hrbanh/eccb2025/](https://www.ms.mff.cuni.cz/~hrbanh/eccb2025/) — if that
+page is no longer accessible, a local mirror is kept at
+[`docs/background/eccb2025_archive/`](docs/background/eccb2025_archive/index.html)).
+
 There is no application code here — this is a data-processing pipeline of Python scripts, a
 shell script, and Rosetta/Vina inputs and outputs, plus a couple of Jupyter notebooks for
 exploration and results analysis.

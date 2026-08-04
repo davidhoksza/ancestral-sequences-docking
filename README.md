@@ -84,8 +84,12 @@ exist.
    writing poses and a log per structure.
 5. **Visualize** (`scripts/05_generate_pymol_scripts.py`) — generate a PyMOL script per
    docked structure: receptor cartoon, motif residues highlighted, docked poses, polar
-   contacts, and the search box overlay. The generated `.pml` scripts use paths relative to
-   the repo root, so to view a structure's docked poses, run PyMOL from the repo root, e.g.:
+   contacts, and the search box overlay. It reads poses from `data\output\vina_poses\`, so if
+   results for a specific `exhaustiveness` setting live in
+   `data\output\vina_poses-exhaustiveness<N>\` instead, copy that directory's contents into
+   `data\output\vina_poses\` before running this step. The generated `.pml` scripts use paths
+   relative to the repo root, so to view a structure's docked poses, run PyMOL from the repo
+   root, e.g.:
 
    ```
    pymol data\output\pymol_scripts\prot3_relaxed_0003_view.pml

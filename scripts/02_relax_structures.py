@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Run Rosetta `relax` on each candidate structure in data/input/.
+"""Run Rosetta `relax` on each candidate design in data/input/.
+
+Designs are discovered from data/input/ by their naming convention --
+prot_<round>_<index>.pdb, e.g. prot_1_1 (first round) or prot_2_29 (second
+round) -- so adding a new round or extending an existing one needs no code
+change. Pass explicit PDB paths to relax only a subset.
 
 Rosetta isn't installed natively on Windows, so by default this script wraps
 the call through WSL (`wsl bash -lc "..."`) and translates Windows paths to
@@ -14,8 +19,8 @@ Karlova"), which would otherwise get silently torn into bogus file
 fragments.
 
 Produces 5 relaxed models per structure plus a score table under
-data/intermediate/relaxed/, matching the flags recovered from a previous
-crash log (data/intermediate/logs/ROSETTA_CRASH.log):
+data/intermediate/relaxed/, matching the flags originally recovered from a
+previous Rosetta crash log (no longer kept in the repo):
   -relax:fast -relax:constrain_relax_to_start_coords -relax:coord_constrain_sidechains
 
 If `relax` isn't on PATH inside your WSL environment, pass the full binary
@@ -27,7 +32,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from paths import INPUT_DIR, RELAXED_DIR, REPO_ROOT, rel
+from paths import INPUT_DIR, RELAXED_DIR, REPO_ROOT, input_designs, rel
 
 NSTRUCT = 5
 
@@ -83,7 +88,8 @@ def main():
     )
     parser.add_argument(
         "structures", nargs="*", type=Path,
-        help="Specific PDB files to relax (default: all data/input/prot*.pdb)",
+        help="Specific PDB files to relax (default: every design in data/input/, "
+             "i.e. all prot_<round>_<index>.pdb)",
     )
     parser.add_argument("--relax-bin", default="relax",
                          help="Rosetta relax executable name/path (default: %(default)s)")
@@ -100,9 +106,9 @@ def main():
     )
     args = parser.parse_args()
 
-    structures = args.structures or sorted(INPUT_DIR.glob("prot*.pdb"))
+    structures = args.structures or input_designs()
     if not structures:
-        raise SystemExit(f"No structures found in {INPUT_DIR}")
+        raise SystemExit(f"No prot_<round>_<index>.pdb designs found in {INPUT_DIR}")
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
 

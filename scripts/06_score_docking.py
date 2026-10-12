@@ -11,7 +11,7 @@ import csv
 import re
 from pathlib import Path
 
-from paths import VINA_POSES_DIR, DOCKING_SCORES_FILE
+from paths import VINA_POSES_DIR, DOCKING_SCORES_FILE, natural_key
 
 # Matches a Vina mode-table row, e.g. "   1       -5.745          0          0"
 MODE_LINE = re.compile(r"^\s*\d+\s+(-?\d+\.\d+)\s+", re.MULTILINE)
@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--out", type=Path, default=DOCKING_SCORES_FILE)
     args = parser.parse_args()
 
-    log_files = sorted(args.vina_poses_dir.glob("*_vina_log.txt"))
+    log_files = sorted(args.vina_poses_dir.glob("*_vina_log.txt"), key=natural_key)
     if not log_files:
         raise SystemExit(
             f"No *_vina_log.txt files in {args.vina_poses_dir} -- run 04_run_docking.sh first"
@@ -46,13 +46,18 @@ def main():
             continue
         results.append((best, name))
 
-    results.sort()
+    # Equal affinities tie-break on the natural name order (prot_2_9 before
+    # prot_2_10), not on the raw string.
+    results.sort(key=lambda r: (r[0], natural_key(r[1])))
 
-    header = f"{'Receptor':<30} {'Best affinity (kcal/mol)':>25}"
+    # Width follows the actual names -- they grow with the design numbering
+    # (prot_<round>_<index>, plus _relaxed_000N/_flex suffixes).
+    name_width = max([len("Receptor")] + [len(name) for _, name in results])
+    header = f"{'Receptor':<{name_width}} {'Best affinity (kcal/mol)':>25}"
     print(header)
     print("-" * len(header))
     for best, name in results:
-        print(f"{name:<30} {best:>25.3f}")
+        print(f"{name:<{name_width}} {best:>25.3f}")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w", newline="") as f:

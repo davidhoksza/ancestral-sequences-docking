@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Prepare every structure for docking: convert to PDBQT and generate a Vina config.
 
-For each PDB in data/input/ (the ancestral candidates prot1-8 plus the 6c2u reference,
-kept in the loop as a docking sanity check) and every relaxed model in
+For each PDB in data/input/ (the ancestral candidate designs, named
+prot_<round>_<index>.pdb, plus the 6c2u reference and its NMR models, kept in
+the loop as a docking sanity check) and every relaxed model in
 data/intermediate/relaxed/:
   - ensures a receptor .pdbqt exists in data/intermediate/pdbqt/, converting
     via Meeko's mk_prepare_receptor.py if missing (a matching .pdbqt for the
@@ -38,7 +39,8 @@ import numpy as np
 
 from paths import (
     INPUT_DIR, RELAXED_DIR, PDBQT_DIR, VINA_CONFIGS_DIR, VINA_POSES_DIR,
-    MOTIF_RESIDUES_FILE, LIGAND_SDF, LIGAND_PDBQT, LOGS_DIR, REPO_ROOT, rel,
+    MOTIF_RESIDUES_FILE, LIGAND_SDF, LIGAND_PDBQT, LOGS_DIR, REPO_ROOT,
+    natural_key, rel,
 )
 from pdb_utils import ca_coords, bounding_box, load_motif_residues, flexible_ploop_residues
 
@@ -225,7 +227,10 @@ def main():
 
     ligand_pdbqt = ensure_ligand_pdbqt(LIGAND_SDF, LIGAND_PDBQT, args.prepare_ligand_cmd)
 
-    structures = sorted(INPUT_DIR.glob("*.pdb")) + sorted(RELAXED_DIR.glob("*.pdb"))
+    structures = (
+        sorted(INPUT_DIR.glob("*.pdb"), key=natural_key)
+        + sorted(RELAXED_DIR.glob("*.pdb"), key=natural_key)
+    )
     print(f"Found {len(structures)} structures to prepare\n")
 
     for pdb_path in structures:

@@ -13,9 +13,12 @@ hydrolysis chemistry, and why the P-loop's early-evolving glycines/Ser-Thr contr
 one late-evolving residue, lysine).
 
 This project asks a narrower question: given a set of **ancestrally-reconstructed**
-sequences (`prot1.pdb` … `prot8.pdb`) inferred to sit along the evolutionary lineage leading
-to a present-day P-loop NTPase, do their predicted 3D structures still fold into a
-plausible ATP-binding pocket? We use the real crystal structure of that modern relative,
+sequences inferred to sit along the evolutionary lineage leading to a present-day P-loop
+NTPase, do their predicted 3D structures still fold into a plausible ATP-binding pocket?
+The candidate designs are produced in rounds and named accordingly —
+`prot_<round>_<index>.pdb`, e.g. `prot_1_1` … `prot_1_8` (round 1) and `prot_2_0` …
+`prot_2_29` (round 2). The pipeline discovers whatever designs are present in
+`data/input/`, so adding a round needs no code change. We use the real crystal structure of that modern relative,
 `6c2u.pdb`, as a reference: its Walker A motifs are located by sequence, used to place a
 docking search box, and every ancestral variant (plus 20 NMR-ensemble models of the
 reference itself, `6c2u_model_*`, as a sanity-check baseline) has ATP docked into the
@@ -39,20 +42,20 @@ exploration and results analysis.
 
 ## Repository layout
 
-- **`data/input/`** — raw, never-modified source structures and ligand: `protN.pdb`,
-  `6c2u.pdb` (+ its 20 NMR models), `atp.sdf`.
+- **`data/input/`** — raw, never-modified source structures and ligand: the designs
+  `prot_<round>_<index>.pdb`, `6c2u.pdb` (+ its 20 NMR models), `atp.sdf`.
 - **`data/intermediate/`** — everything derived along the way: the identified motif residue
   ranges, Rosetta-relaxed models and their score table, Vina-ready `.pdbqt` conversions, and
   generated Vina config files (one per structure).
 - **`data/output/`** — final results: docked poses (`vina_poses/`, ranked by predicted
-  binding affinity), generated PyMOL viewer scripts (`pymol_scripts/`), and the ranked
+  binding affinity, alongside the generated PyMOL viewer scripts for them), and the ranked
   summary `docking_scores.csv` (and `docking_scores-exhaustiveness<N>.csv` variants, one per
   Vina `exhaustiveness` setting that's been tried).
 - **`scripts/`** — the numbered pipeline steps (`01_...` – `06_...`), plus shared helpers
   (`paths.py`, `pdb_utils.py`) and the PyMOL box-visualization plugin (`docking_box.py`).
 - **`notebooks/`** — analysis notebooks, e.g. `analyze_docking_scores.ipynb`, which combines
   the per-exhaustiveness score CSVs and charts how many/which structures clear a chosen
-  affinity threshold.
+  affinity threshold, comparing design rounds side by side.
 - **`docs/background/`** — the mechanistic background on P-loop/ATP binding referenced above.
 - **`metacentrum/`** — HPC deployment for distributing docking runs across the Czech
   Metacentrum grid.
@@ -70,7 +73,7 @@ exist.
 1. **Identify the motif** (`scripts/01_identify_motif.py`) — regex-search the reference
    structure's sequence for the Walker A pattern and record the matching residue ranges.
 2. **Relax structures** (`scripts/02_relax_structures.py`) — run Rosetta `relax` on every
-   ancestral structure, producing 5 relaxed models each plus a score table. This serves two
+   ancestral design found in `data/input/`, producing 5 relaxed models each plus a score table. This serves two
    purposes: sampling whether alternate, lower-energy backbone/side-chain conformations
    change the docking outcome, and — more practically — resolving steric clashes. Some
    ancestral designs have clashes severe enough that `mk_prepare_receptor.py` (step 3)
@@ -81,18 +84,19 @@ exist.
    a Vina config per structure (optionally with flexible P-loop side chains via
    `--flexible`).
 4. **Run docking** (`scripts/04_run_docking.sh`) — run AutoDock Vina against every config,
-   writing poses and a log per structure.
+   writing poses and a log per structure. Set `VINA_EXHAUSTIVENESS=<N>` to dock at a
+   different exhaustiveness than the configs specify; results then go to
+   `data\output\vina_poses-exhaustiveness<N>\` instead of `data\output\vina_poses\`.
 5. **Visualize** (`scripts/05_generate_pymol_scripts.py`) — generate a PyMOL script per
    docked structure: receptor cartoon, motif residues highlighted, docked poses, polar
-   contacts, and the search box overlay. It reads poses from `data\output\vina_poses\`, so if
-   results for a specific `exhaustiveness` setting live in
-   `data\output\vina_poses-exhaustiveness<N>\` instead, copy that directory's contents into
-   `data\output\vina_poses\` before running this step. The generated `.pml` scripts use paths
-   relative to the repo root, so to view a structure's docked poses, run PyMOL from the repo
-   root, e.g.:
+   contacts, and the search box overlay. It reads poses from `data\output\vina_poses\` by
+   default; for a specific `exhaustiveness` run, pass
+   `--vina-poses-dir data\output\vina_poses-exhaustiveness<N>`. Scripts are written into
+   the same directory as the poses they show (override with `--output-dir`), and can be
+   opened from any working directory (or by double-clicking), e.g.:
 
    ```
-   pymol data\output\pymol_scripts\prot3_relaxed_0003_view.pml
+   pymol data\output\vina_poses\prot_2_7_relaxed_0003_view.pml
    ```
 6. **Score and rank** (`scripts/06_score_docking.py`) — parse each structure's best-pose
    affinity from the Vina logs and rank all structures from strongest to weakest predicted
@@ -107,7 +111,10 @@ times with different Vina `exhaustiveness` settings — one ranked CSV per run
 setting. [`notebooks/analyze_docking_scores.ipynb`](notebooks/analyze_docking_scores.ipynb)
 loads and compares all of them: it combines the per-run CSVs into one dataframe and, for
 each exhaustiveness value separately, lists and charts which structures clear a chosen
-binding-affinity threshold.
+binding-affinity threshold. All design rounds are analyzed together, tagged by round: per
+exhaustiveness it reports each round's share of designs with at least one hit, compares
+the rounds' affinity distributions, and ranks every design by its best affinity. It also
+flags designs in `data/input/` that have no docking scores at all.
 
 ## Requirements
 
@@ -140,5 +147,5 @@ inside it:
 ## Running on Metacentrum
 
 `metacentrum/` distributes step 4 (docking) across the Czech Metacentrum HPC grid as one PBS
-job per protein. See the "Running on Metacentrum" section of [`CLAUDE.md`](CLAUDE.md) for
-setup and submission instructions.
+job per design, discovered from `data/input/`. See the "Running on Metacentrum" section of
+[`CLAUDE.md`](CLAUDE.md) for setup and submission instructions.

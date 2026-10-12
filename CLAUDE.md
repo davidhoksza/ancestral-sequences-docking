@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this project does
 
 Structural pipeline studying whether ancestrally-reconstructed variants of a P-loop
-NTPase (`prot1.pdb` … `prot8.pdb`) retain a plausible ATP-binding pocket, using the real
-crystal structure `6c2u.pdb` as reference. Two Walker-A P-loop motifs
+NTPase (the candidate *designs*, `prot_<round>_<index>.pdb`) retain a plausible ATP-binding
+pocket, using the real crystal structure `6c2u.pdb` as reference. Two Walker-A P-loop motifs
 (`G-x(4)-GK-[T/S]`, residues 9-16 and 62-69 in `6c2u`) are located and used to place the
 AutoDock Vina search box for every structure; ATP is then docked into each. Structures are
 also refined with Rosetta `relax` and scored, independent of docking.
@@ -18,12 +18,14 @@ shell script, and Rosetta/Vina inputs/outputs under `data/`.
 
 `data/` is split by pipeline stage — never write generated files back into `data/input/`:
 
-- `data/input/` — raw, never-modified source structures/ligand: `protN.pdb`, `6c2u.pdb`,
-  `atp.sdf`.
+- `data/input/` — raw, never-modified source structures/ligand: the candidate designs
+  `prot_<round>_<index>.pdb` (see "Design naming" below), `6c2u.pdb` plus its 20 NMR models
+  `6c2u_model_<N>.pdb`, and `atp.sdf`.
 - `data/intermediate/motif_residues.json` — P-loop residue ranges written by
   `01_identify_motif.py`, consumed by `03_prepare_docking.py`.
-- `data/intermediate/relaxed/` — Rosetta relax output models (`protN_relaxed_000M.pdb`) and
-  their score table (`score_relaxed.sc`).
+- `data/intermediate/relaxed/` — Rosetta relax output models
+  (`<structure>_relaxed_000M.pdb`, e.g. `prot_2_7_relaxed_0001.pdb`) and one score table per
+  structure (`<structure>_score.sc`).
 - `data/intermediate/pdbqt/` — Vina-ready `.pdbqt` conversions of both `data/input/` and
   `data/intermediate/relaxed/` structures, plus the ligand.
 - `data/intermediate/vina_configs/` — generated Vina config files, one per structure; treat
@@ -31,13 +33,13 @@ shell script, and Rosetta/Vina inputs/outputs under `data/`.
   and a few per-protein configs predate this pipeline and have hand-tuned box
   sizes/exhaustiveness that differ from the script defaults — re-running
   `03_prepare_docking.py` will overwrite those tweaks).
-- `data/intermediate/logs/` — `ROSETTA_CRASH.log`, `prepare_docking_errors.log` (failed
-  receptor-prep runs, see step 3) and similar.
+- `data/intermediate/logs/` — run logs, created on demand and not checked in:
+  `prepare_docking_errors.log` (failed receptor-prep runs, see step 3) and similar. The
+  directory is absent until a step writes to it.
 - `data/output/vina_poses/` — final docked poses (multi-model `.pdbqt`, ranked by Vina's
   predicted binding affinity, best pose first) and each run's `<structure>_vina_log.txt`
-  (Vina's full stdout, including the per-mode affinity table).
-- `data/output/pymol_scripts/` — generated `.pml` viewers, one per docked structure (see
-  step 5).
+  (Vina's full stdout, including the per-mode affinity table), plus the generated
+  `<structure>_view.pml` PyMOL viewers, one per docked structure (see step 5).
 - `data/output/docking_scores.csv` — every structure's best-pose binding affinity, ranked
   strongest to weakest (see step 6).
 
@@ -46,6 +48,32 @@ box-visualization plugin used by step 5), `vina_1.2.7_win.exe`, `scratch/` (ad-h
 exploratory, not part of the reproducible pipeline — currently just `prepare_docking.ipynb`,
 the superseded notebook this pipeline replaced), `metacentrum/` (HPC deployment, see
 "Running on Metacentrum" below — not used for local runs).
+
+## Design naming
+
+Candidate designs are named `prot_<round>_<index>.pdb` — `<round>` is the design round,
+`<index>` the design's id within that round (e.g. `prot_1_1` … `prot_1_8` for round 1,
+`prot_2_0` … `prot_2_29` for round 2). Both numbers are open-ended: rounds accumulate over
+time and a round holds however many designs it holds.
+
+Because of that, **nothing in the pipeline hardcodes a list of design names** — every step
+discovers them by globbing `data/input/`. The convention lives in one place,
+`scripts/paths.py`:
+
+- `DESIGN_GLOB` / `DESIGN_NAME_RE` — the `prot_<round>_<index>` pattern.
+- `input_designs()` — every design PDB in `data/input/`, naturally sorted. Used by step 2;
+  step 3 takes all of `data/input/` (designs *and* the 6c2u reference/NMR models), so it
+  globs `*.pdb` instead.
+- `parse_design_name(name)` — `(round, index)`, or `None` for anything that isn't exactly a
+  design (the reference, relaxed models, `_flex` variants).
+- `natural_key(name)` — sort key that orders embedded numbers numerically. Use it instead of
+  plain `sorted()` anywhere structure names are ordered: indices run past 9, so string
+  sorting interleaves them as `prot_2_1`, `prot_2_10`, `prot_2_11`, …, `prot_2_2`.
+
+The same two-digit hazard applies to name *matching*, not just sorting: a raw string prefix
+`prot_2_1` also matches `prot_2_10` … `prot_2_19` (and `6c2u_model_1` matches
+`6c2u_model_10`…). Step 4 and `metacentrum/` therefore match on underscore-separated name
+boundaries — see step 4 below.
 
 ## Pipeline / commands
 
@@ -58,12 +86,13 @@ steps read the files the earlier ones wrote rather than taking piped input.
    `data/intermediate/motif_residues.json`. Override the reference/pattern/output path with
    `--reference` / `--pattern` / `--out`.
 
-2. **`python scripts/02_relax_structures.py`** — runs Rosetta `relax` on every
-   `data/input/prot*.pdb`, producing 5 relaxed models each plus a per-structure score table
+2. **`python scripts/02_relax_structures.py`** — runs Rosetta `relax` on every design in
+   `data/input/` (discovered via `paths.input_designs()`; pass explicit PDB paths as
+   positional arguments to relax only a subset), producing 5 relaxed models each plus a per-structure score table
    (`data/intermediate/relaxed/<stem>_score.sc`, via `-out:file:scorefile`, so different
    proteins' runs don't clobber a shared score file — override the naming with
-   `--scorefile-name`), using the flags recovered from a prior
-   `ROSETTA_CRASH.log`: `-relax:fast -relax:constrain_relax_to_start_coords
+   `--scorefile-name`), using the flags originally recovered from a Rosetta crash log (no
+   longer kept in the repo): `-relax:fast -relax:constrain_relax_to_start_coords
    -relax:coord_constrain_sidechains`. Rosetta isn't installed natively on this Windows
    machine, so by default the script shells out through WSL (`wsl bash -lc "..."`) and
    translates Windows paths via `wslpath`; pass `--no-wsl` if running inside a Linux shell
@@ -105,20 +134,38 @@ steps read the files the earlier ones wrote rather than taking piped input.
    receptor PDB is still the original, undocked structure.
 
 4. **`scripts/04_run_docking.sh [prefix]`** — runs Vina (`vina` on PATH by default — edit
-   `VINA_BIN` in the script to point at `./vina_1.2.7_win.exe` or elsewhere) against every
-   config in `data/intermediate/vina_configs/` whose filename starts with `prefix` (omit it
-   to run every config; e.g. `prot1` matches `prot1_config.txt`, `prot1_flex_config.txt`,
-   `prot1_relaxed_0001_config.txt`, ... — this is what `metacentrum/` uses to split work by
-   protein), writing poses to `data/output/vina_poses/` per each config's `out =` line, and
+   `VINA_BIN` in the script to point at `./vina_1.2.7_win.exe` or elsewhere) against the
+   configs in `data/intermediate/vina_configs/` selected by `prefix` — omit it to run every
+   `*_config.txt`. `prefix` is matched on underscore-separated name boundaries, *not* as a
+   raw string prefix (see "Design naming"): `prot_2_1` selects `prot_2_1_config.txt`,
+   `prot_2_1_flex_config.txt`, `prot_2_1_relaxed_0001_config.txt`, … but deliberately not
+   `prot_2_10`…`prot_2_19`'s configs; `prot_2` selects all of round 2; `prot_2_1_flex`
+   selects just that one config. This is what `metacentrum/` uses to split work by design.
+   Writes poses to `data/output/vina_poses/` per each config's `out =` line, and
    tee's Vina's stdout to a matching `<structure>_vina_log.txt` in the same directory. Set
    `VINA_CPU` to cap Vina's CPU usage per config (passed as `--cpu`) — important on a shared
    machine/HPC node, otherwise Vina auto-detects and tries to use every CPU on the node.
+   Set `VINA_EXHAUSTIVENESS=<N>` to override the configs' exhaustiveness at run time
+   (passed as `--exhaustiveness`; Vina's command-line options win over the config file)
+   without regenerating them via step 3. Because each config's `out =` is fixed, poses and
+   logs then go to `data/output/vina_poses-exhaustiveness<N>/` instead (via `--out`), so
+   runs at different settings don't overwrite each other. Point steps 5/6 at that directory
+   with `--vina-poses-dir` (step 5 then writes its viewers into that directory too; give
+   step 6 `--out` to keep its CSV separate).
+   It overrides flex configs' `--flexible-exhaustiveness` as well.
+   Set `SKIP_EXISTING=1` to skip every config whose pose file (the config's `out =`, or the
+   `-exhaustiveness<N>` one) already exists and is non-empty, exiting without running Vina
+   if all of them do. The pose file is the completion marker, not the log: Vina writes it
+   only once docking finishes, while the log is tee'd as it runs, so a killed run leaves a
+   partial log but no pose file.
    Requires step 3's configs to exist first.
 
 5. **`python scripts/05_generate_pymol_scripts.py`** — for every
    `data/output/vina_poses/<structure>_vina_output.pdbqt`, finds the matching original
    receptor (`data/input/<structure>.pdb` or `data/intermediate/relaxed/<structure>.pdb`)
-   and writes `data/output/pymol_scripts/<structure>_view.pml`: loads the receptor as
+   and writes `<structure>_view.pml` into the same poses directory (override with
+   `--output-dir`), so each `--vina-poses-dir` — e.g. a `vina_poses-exhaustiveness<N>/`
+   run — carries its own viewers: loads the receptor as
    cartoon and the docked poses as sticks (each Vina mode becomes a separate PyMOL state);
    highlights the P-loop motif residues (from `data/intermediate/motif_residues.json`) as
    magenta sticks (`--no-motif` to skip; not orange, which is PyMOL's default phosphorus
@@ -129,8 +176,12 @@ steps read the files the earlier ones wrote rather than taking piped input.
    highlighting is off); and — if a matching
    `data/intermediate/vina_configs/<structure>_config.txt` exists — overlays the docking
    search box via `scripts/docking_box.py` (`--no-box` to skip this). Generated scripts use
-   paths relative to the repo root (same convention as the Vina configs), so run PyMOL from
-   there: `pymol data/output/pymol_scripts/<structure>_view.pml`.
+   paths relative to their own directory — the poses load by bare file name, the receptor
+   and box plugin by a relative hop (e.g. `../../intermediate/relaxed/<structure>.pdb`), so
+   the repo can be moved — and open from any working directory: each starts with a `python`
+   block that `chdir`s into the script's directory (from PyMOL's `__script__`) and `chdir`s
+   back at the end — e.g. `pymol data/output/vina_poses/<structure>_view.pml`, or
+   double-click it.
    Requires step 4's poses to exist first.
 
 6. **`python scripts/06_score_docking.py`** — parses every
@@ -148,27 +199,30 @@ steps read the files the earlier ones wrote rather than taking piped input.
    the search box as a wireframe cube over the loaded structure.
 
 `scripts/paths.py` and `scripts/pdb_utils.py` hold shared constants (the `data/` layout
-above) and PDB-parsing helpers (SEQRES parsing, CA-coordinate extraction, bounding-box
-calc) used by steps 1, 3, 5 and 6 — change the directory layout there, not per-script.
+above plus the design-naming helpers from "Design naming") and PDB-parsing helpers (SEQRES
+parsing, CA-coordinate extraction, bounding-box calc) used by steps 1, 3, 5 and 6 — change
+the directory layout or the naming convention there, not per-script.
 
 There is no build, lint, or automated test tooling in this repo. Requires `numpy`.
 
 ## Working with data files
 
-- `data/score*.sc` files are Rosetta score tables (whitespace-aligned, `SCORE:` prefixed
-  rows); the `description` column matches the corresponding relaxed-model filename.
+- `data/intermediate/relaxed/*_score.sc` files are Rosetta score tables
+  (whitespace-aligned, `SCORE:` prefixed rows); the `description` column matches the
+  corresponding relaxed-model filename.
 
-When adding a new candidate structure: drop `protN.pdb` into `data/input/`, then run steps
-2-6 above (step 1 only needs re-running if you change the reference structure or motif
-pattern).
+When adding new candidate designs: drop `prot_<round>_<index>.pdb` into `data/input/` —
+continuing an existing round or starting a new one, whichever fits — then run steps 2-6
+above. No script needs editing; they all discover designs by globbing `data/input/` (step 1
+only needs re-running if you change the reference structure or motif pattern).
 
 ## Running on Metacentrum
 
 `metacentrum/` distributes step 4 (docking) across the Czech Metacentrum HPC grid
-(docs.metacentrum.cz) as one PBS job per protein, each running
-`scripts/04_run_docking.sh <protN>` (so a job covers all of that protein's configs — rigid,
-flexible, relaxed replicates) directly against project storage, with no scratch staging: all
-jobs read/write the same shared `data/` directory.
+(docs.metacentrum.cz) as one PBS job per design, each running
+`scripts/04_run_docking.sh <prot_i_j>` (so a job covers all of that design's configs —
+rigid, flexible, relaxed replicates) directly against project storage, with no scratch
+staging: all jobs read/write the same shared `data/` directory.
 
 One-time setup, after copying this repo to
 `/storage/praha5-elixir/home/davidhoksza/projects/ancestral-docking` (`$PROJECT_DIR` below;
@@ -180,13 +234,23 @@ override via the `PROJECT_DIR` env var if it lives elsewhere):
    *not* installed here — it's a pre-existing Metacentrum module (`module avail rosetta/`),
    gated behind joining the `lic_rosetta` group via the e-INFRA portal.
 
-2. **`bash metacentrum/submit_all.sh [protN ...]`** — submits one `qsub` job per protein
-   (default: `prot1`..`prot8`; pass specific names to submit a subset) via
-   `metacentrum/run_docking_job.pbs`, which requests `ncpus=4` + `walltime=24:00:00`,
-   activates the mamba env, `cd`s into `$PROJECT_DIR`, and runs
-   `VINA_CPU=4 scripts/04_run_docking.sh <protN>`. PBS stdout/stderr per job goes to
-   `metacentrum/logs/<protN>.log` (gitignored — operational noise, unlike the tracked
-   `data/**/*.log` scientific logs).
+2. **`bash metacentrum/submit_all.sh [name ...]`** — submits one `qsub` job per design.
+   With no arguments it discovers the designs from `$PROJECT_DIR/data/input/` by the
+   `prot_<round>_<index>.pdb` convention and orders them numerically, so new rounds/designs
+   are picked up without editing the script. Arguments override that and are passed through
+   as step 4 prefixes, so they can name individual designs (`prot_2_5 prot_2_7`) or a whole
+   round as a single job (`prot_2`). Each job runs `metacentrum/run_docking_job.pbs`, which
+   requests `ncpus=4` + `walltime=24:00:00`, activates the mamba env, `cd`s into
+   `$PROJECT_DIR`, and runs `VINA_CPU=4 SKIP_EXISTING=1 scripts/04_run_docking.sh <name>`
+   — so a job whose results already exist exits without docking, and resubmitting after a
+   walltime kill only docks what's missing (`SKIP_EXISTING=0 bash
+   metacentrum/submit_all.sh ...` forces a full re-dock). PBS
+   stdout/stderr per job goes to `metacentrum/logs/<name>.log` (gitignored — operational
+   noise, unlike the tracked `data/**/*.log` scientific logs). Note that a full round is a
+   lot of jobs (round 2 alone is 30), so submit a subset while testing.
+   `VINA_EXHAUSTIVENESS=<N> bash metacentrum/submit_all.sh ...` forwards that override
+   (see step 4) to every job via `qsub -v`, and suffixes job names/PBS logs with
+   `-exhaustiveness<N>` to match the output directory.
 
 Steps 1-3 (motif ID, relax, receptor/config prep) are expected to have already been run —
 either locally before copying the repo over, or manually on Metacentrum with the same mamba

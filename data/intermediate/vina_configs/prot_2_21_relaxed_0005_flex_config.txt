@@ -1,0 +1,18 @@
+# AutoDock Vina configuration for ATP docking into prot_2_21_relaxed_0005_rigid
+receptor = data/intermediate/pdbqt/prot_2_21_relaxed_0005_rigid.pdbqt
+flex = data/intermediate/pdbqt/prot_2_21_relaxed_0005_flex.pdbqt
+ligand = data/intermediate/pdbqt/atp.pdbqt
+
+center_x = -5.777
+center_y = -5.313
+center_z = -12.657
+
+size_x = 28.670
+size_y = 27.731
+size_z = 22.784
+
+out = data/output/vina_poses/prot_2_21_relaxed_0005_flex_vina_output.pdbqt
+
+exhaustiveness = 4
+num_modes = 9
+energy_range = 4
